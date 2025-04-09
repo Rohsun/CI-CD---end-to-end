@@ -39,7 +39,7 @@ pipeline {
           git config user.name "rohith"
           git add k8s/deployment.yaml
           git commit -m "Updated image to $DOCKER_IMAGE:$BUILD_NUMBER"
-          git push origin Head
+          git push origin HEAD
         '''
       }
     }
