@@ -10,7 +10,7 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        git credentialsId: "${env.GIT_CREDENTIALS_ID}", url: 'https://github.com/Rohsun/CI-CD---end-to-end.git'
+        git branch: 'main', credentialsId: "${env.GIT_CREDENTIALS_ID}", url: 'https://github.com/Rohsun/CI-CD---end-to-end.git'
       }
     }
 
@@ -39,7 +39,7 @@ pipeline {
           git config user.name "rohith"
           git add k8s/deployment.yaml
           git commit -m "Updated image to $DOCKER_IMAGE:$BUILD_NUMBER"
-          git push origin main
+          git push origin Head
         '''
       }
     }
