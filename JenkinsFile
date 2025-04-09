@@ -35,8 +35,8 @@ pipeline {
       steps {
         sh '''
           sed -i "s|image:.*|image: $DOCKER_IMAGE:$BUILD_NUMBER|" k8s/deployment.yaml
-          git config user.email "rohith.sunkari13@example.com"
-          git config user.name "rohith"
+          git config user.email "rohith.sunkari13@gmail.com"
+          git config user.name "rohsun"
           git add k8s/deployment.yaml
           git commit -m "Updated image to $DOCKER_IMAGE:$BUILD_NUMBER"
           git push origin HEAD
