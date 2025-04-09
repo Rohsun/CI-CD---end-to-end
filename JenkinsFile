@@ -1,47 +1,67 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    DOCKER_IMAGE = "rohsun/my-flask-app"
-    GIT_CREDENTIALS_ID = "github-credentials"
-  }
-
-  stages {
-
-    stage('Checkout') {
-      steps {
-        git branch: 'main', credentialsId: "${env.GIT_CREDENTIALS_ID}", url: 'https://github.com/Rohsun/CI-CD---end-to-end.git'
-      }
+    environment {
+        IMAGE_NAME = "rohsun/my-flask-app"
+        GIT_CREDENTIALS_ID = "github-credentials"
+        DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
-    stage('Build Docker Image') {
-      steps {
-        sh 'docker build -t $DOCKER_IMAGE:$BUILD_NUMBER ./app'
-      }
-    }
-
-    stage('Push Docker Image') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-          sh '''
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
-            docker push $DOCKER_IMAGE:$BUILD_NUMBER
-          '''
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git url: 'https://github.com/Rohsun/CI-CD---end-to-end.git', branch: 'main'
+            }
         }
-      }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${IMAGE_NAME}:${DOCKER_IMAGE_TAG} ./app"
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    sh "docker push ${IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                }
+            }
+        }
+
+        stage('Update Kubernetes Manifest') {
+            steps {
+                script {
+                    sh "sed -i 's|image:.*|image: ${IMAGE_NAME}:${DOCKER_IMAGE_TAG}|' k8s/deployment.yaml"
+                }
+            }
+        }
+
+        stage('Git Commit and Push Updated Manifest') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS_ID}", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN')]) {
+                    script {
+                        sh '''
+                          git config user.email "rohith.sunkari13@example.com"
+                          git config user.name "rohith"
+                          git add k8s/deployment.yaml
+                          git commit -m "Updated image to ${IMAGE_NAME}:${DOCKER_IMAGE_TAG}" || echo "No changes to commit"
+                          git remote set-url origin https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/Rohsun/CI-CD---end-to-end.git
+                          git push origin HEAD
+                        '''
+                    }
+                }
+            }
+        }
     }
 
-    stage('Update Kubernetes Manifest') {
-      steps {
-        sh '''
-          sed -i "s|image:.*|image: $DOCKER_IMAGE:$BUILD_NUMBER|" k8s/deployment.yaml
-          git config user.email "rohith.sunkari13@gmail.com"
-          git config user.name "rohsun"
-          git add k8s/deployment.yaml
-          git commit -m "Updated image to $DOCKER_IMAGE:$BUILD_NUMBER"
-          git push origin HEAD
-        '''
-      }
+    post {
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed!"
+        }
     }
-  }
 }
