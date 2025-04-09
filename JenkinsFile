@@ -7,15 +7,16 @@ pipeline {
   }
 
   stages {
+
     stage('Checkout') {
       steps {
         git credentialsId: "${env.GIT_CREDENTIALS_ID}", url: 'https://github.com/Rohsun/CI-CD---end-to-end.git'
       }
     }
 
-    stage('Build') {
+    stage('Build Docker Image') {
       steps {
-        sh 'docker build -t $DOCKER_IMAGE:$BUILD_NUMBER ./app'
+        sh 'docker build -t $DOCKER_IMAGE:$BUILD_NUMBER .'
       }
     }
 
@@ -30,15 +31,15 @@ pipeline {
       }
     }
 
-    stage('Update Manifest') {
+    stage('Update Kubernetes Manifest') {
       steps {
         sh '''
-        sed -i "s|image:.*|image: $DOCKER_IMAGE:$BUILD_NUMBER|" k8s/deployment.yaml
-        git config user.email "rohith.sunkari13@example.com"
-        git config user.name "rohtih"
-        git add k8s/deployment.yaml
-        git commit -m "Updated image to $DOCKER_IMAGE:$BUILD_NUMBER"
-        git push origin main
+          sed -i "s|image:.*|image: $DOCKER_IMAGE:$BUILD_NUMBER|" k8s/deployment.yaml
+          git config user.email "rohith.sunkari13@example.com"
+          git config user.name "rohith"
+          git add k8s/deployment.yaml
+          git commit -m "Updated image to $DOCKER_IMAGE:$BUILD_NUMBER"
+          git push origin main
         '''
       }
     }
